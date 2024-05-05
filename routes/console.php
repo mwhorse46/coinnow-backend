@@ -1,6 +1,6 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
+use App\Http\Controllers\Api\GeneralApiController;
 use Illuminate\Support\Facades\Artisan;
 
 /*
@@ -14,6 +14,15 @@ use Illuminate\Support\Facades\Artisan;
 |
  */
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->describe('Display an inspiring quote');
+// Artisan::command('inspire', function () {
+//     $this->comment(Inspiring::quote());
+// })->describe('Display an inspiring quote');
+
+Artisan::command('autoprice:change', function () {
+    try {
+        $controller = resolve(GeneralApiController::class);
+        $controller->autoPriceChangeNew();
+    } catch (\Exception $e) {
+        Log::error('An error occurred: ' . $e->getMessage());
+    }
+})->describe('Automatically change price');
