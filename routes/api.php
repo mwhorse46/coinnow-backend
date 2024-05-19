@@ -82,6 +82,7 @@ Route::middleware(['checkKey'])->group(function () {
             Route::post('/getQuestionsByEmail', 'getQuestionsByEmail');
             Route::post('/checkQuestion', 'checkQuestion');
             Route::post('/resetPasswordV1', 'resetPasswordV1');
+            Route::post('/getAnswersForQuestions', 'getAnswersForQuestions');
             Route::middleware(['sellerAuth'])->post('/setQuestion', 'setQuestion');
         });
 

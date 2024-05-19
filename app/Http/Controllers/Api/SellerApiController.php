@@ -43,11 +43,17 @@ class SellerApiController extends Controller
     public function getSellerDetails()
     {
         $specials = Special::select('quantity', 'product_id')->where('seller_id', $this->getUser->id)->where('quantity', '>', 0)->with('product:id,image,points', 'productDescription:id,name,product_id')->get();
-        $user = Seller::where('id', $this->getUser->id)->with(['clan' => function ($query) {
-            $query->with(['product' => function ($query) {
-                $query->with('productDescription');
-            }, 'owner', 'members']);
-        }])->first();
+        $user = Seller::where('id', $this->getUser->id)->with([
+            'clan' => function ($query) {
+                $query->with([
+                    'product' => function ($query) {
+                        $query->with('productDescription');
+                    },
+                    'owner',
+                    'members'
+                ]);
+            }
+        ])->first();
         //$specials = Special::join('product', 'product.id', '=', 'special.product_id')->get();
         return ['status' => 1, 'data' => $user, 'specials' => $specials];
     }
@@ -61,7 +67,7 @@ class SellerApiController extends Controller
                 ->paginate($this->defaultPaginate);
 
             return ['status' => 1, 'data' => $records];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -130,18 +136,26 @@ class SellerApiController extends Controller
                 ->with('receiver:id,telephone,firstname,lastname,email')
                 ->with('sender:id,telephone,firstname,lastname,email')
                 ->with('product:seller_id')
-                ->with(['clan' => function ($query) {
-                    $query->with(['owner' => function ($query) {
-                        $query->select('id', 'firstname', 'lastname');
-                    }]);
-                }])
-                ->with(array('product' => function ($query) {
-                    $query->select('id', 'image')->with('productDescription:id,name,product_id');
-                }))
+                ->with([
+                    'clan' => function ($query) {
+                        $query->with([
+                            'owner' => function ($query) {
+                                $query->select('id', 'firstname', 'lastname');
+                            }
+                        ]);
+                    }
+                ])
+                ->with(
+                    array(
+                        'product' => function ($query) {
+                            $query->select('id', 'image')->with('productDescription:id,name,product_id');
+                        }
+                    )
+                )
                 ->where('seller_id', $this->getUser->id)
                 ->orderBy('notification.created_at', 'DESC')->paginate($this->defaultPaginate);
             return ['status' => 1, 'data' => $history];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -149,13 +163,17 @@ class SellerApiController extends Controller
     public function getExpenses()
     {
         try {
-            $history = Notification::select('id', 'quantity', 'price', 'type', 'seen', 'created_at', 'product_id')->with(array('product' => function ($query) {
-                $query->select('id', 'image', 'price')->with('productDescription:id,name,product_id');
-            }))->where('seller_id', $this->getUser->id)
+            $history = Notification::select('id', 'quantity', 'price', 'type', 'seen', 'created_at', 'product_id')->with(
+                array(
+                    'product' => function ($query) {
+                        $query->select('id', 'image', 'price')->with('productDescription:id,name,product_id');
+                    }
+                )
+            )->where('seller_id', $this->getUser->id)
                 ->whereIn('type', ['item_buy', 'special_item_buy'])
                 ->orderBy('notification.created_at', 'DESC')->paginate($this->defaultPaginate);
             return ['status' => 1, 'data' => $history];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -164,36 +182,51 @@ class SellerApiController extends Controller
     {
         try {
 
-            $history = Notification::select('id', 'quantity', 'price', 'type', 'seen', 'created_at', 'product_id')->with(array('product' => function ($query) {
-                $query->select('id', 'image', 'price')->with('productDescription:id,name,product_id');
-            }))->where('seller_id', $this->getUser->id)
+            $history = Notification::select('id', 'quantity', 'price', 'type', 'seen', 'created_at', 'product_id')->with(
+                array(
+                    'product' => function ($query) {
+                        $query->select('id', 'image', 'price')->with('productDescription:id,name,product_id');
+                    }
+                )
+            )->where('seller_id', $this->getUser->id)
                 ->whereIn('type', ['item_sell', 'special_item_sell', 'item_sell_auto', 'special_item_sell_auto'])
                 ->orderBy('notification.created_at', 'DESC')->paginate($this->defaultPaginate);
             return ['status' => 1, 'data' => $history];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
 
-    public function balanceHistory(Request $request)
+    public function balanceHistory()
     {
         try {
             $history = Notification::select('id', 'quantity', 'type', 'seen', 'created_at', 'product_id', 'seller_id', 'sender_id', 'receiver_id', 'amount', 'price', 'balance', 'clan_id')
                 ->with('receiver:id,telephone,firstname,lastname,email')
                 ->with('sender:id,telephone,firstname,lastname,email')
-                ->with(['clan' => function ($query) {
-                    $query->with(['owner' => function ($query) {
-                        $query->select('id', 'firstname', 'lastname');
-                    }]);
-                }])
-                ->with(array('product' => function ($query) {
-                    $query->select('id', 'image')->with('productDescription:id,name,product_id');
-                }))
+                ->with([
+                    'clan' => function ($query) {
+                        $query->with([
+                            'owner' => function ($query) {
+                                $query->select('id', 'firstname', 'lastname');
+                            }
+                        ]);
+                    }
+                ])
+                ->with(
+                    array(
+                        'product' => function ($query) {
+                            $query->select('id', 'image')->with('productDescription:id,name,product_id');
+                        }
+                    )
+                )
                 ->where('seller_id', $this->getUser->id)
-            // ->whereIn('type', ['send_coin', 'receive_coin', 'item_sell', 'special_item_sell', 'item_sell_auto', 'special_item_sell_auto', 'item_buy', 'special_item_buy', 'trade'])
+                // ->whereIn('type', ['send_coin', 'receive_coin', 'item_sell', 'special_item_sell', 'item_sell_auto', 'special_item_sell_auto', 'item_buy', 'special_item_buy', 'trade'])
                 ->orderBy('notification.created_at', 'DESC')->orderBy('notification.id', 'DESC')->paginate($this->defaultPaginate);
+            error_log('getBalance');
+            error_log(json_encode($history));
             return ['status' => 1, 'data' => $history];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -204,19 +237,27 @@ class SellerApiController extends Controller
             $history = Notification::where('clan_id', $id)->select('id', 'quantity', 'type', 'seen', 'created_at', 'product_id', 'seller_id', 'sender_id', 'receiver_id', 'amount', 'price', 'balance', 'clan_id')
                 ->with('receiver:id,telephone,firstname,lastname,email')
                 ->with('sender:id,telephone,firstname,lastname,email')
-                ->with(['clan' => function ($query) {
-                    $query->with(['owner' => function ($query) {
-                        $query->select('id', 'firstname', 'lastname');
-                    }]);
-                }])
-                ->with(array('product' => function ($query) {
-                    $query->select('id', 'image')->with('productDescription:id,name,product_id');
-                }))
+                ->with([
+                    'clan' => function ($query) {
+                        $query->with([
+                            'owner' => function ($query) {
+                                $query->select('id', 'firstname', 'lastname');
+                            }
+                        ]);
+                    }
+                ])
+                ->with(
+                    array(
+                        'product' => function ($query) {
+                            $query->select('id', 'image')->with('productDescription:id,name,product_id');
+                        }
+                    )
+                )
                 ->where('type', '!=', 'clan_join')
-            // ->whereIn('type', ['send_coin', 'receive_coin', 'item_sell', 'special_item_sell', 'item_sell_auto', 'special_item_sell_auto', 'item_buy', 'special_item_buy', 'trade'])
+                // ->whereIn('type', ['send_coin', 'receive_coin', 'item_sell', 'special_item_sell', 'item_sell_auto', 'special_item_sell_auto', 'item_buy', 'special_item_buy', 'trade'])
                 ->orderBy('notification.created_at', 'DESC')->orderBy('notification.id', 'DESC')->paginate($this->defaultPaginate);
             return ['status' => 1, 'data' => $history];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -250,7 +291,7 @@ class SellerApiController extends Controller
             //     ->get();
 
             return ['status' => 1, 'data' => $records];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -294,7 +335,7 @@ class SellerApiController extends Controller
                 return ['status' => 4];
             }
             return ['status' => 1];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             error_log($e->getMessage());
             return ['status' => 0, 'error' => $e->getMessage()];
         }
@@ -321,7 +362,7 @@ class SellerApiController extends Controller
             $update = Seller::where('id', $this->getUser->id)->update($request->all());
             $getNew = Seller::select('firstname', 'lastname', 'email', 'store_name', 'telephone')->findOrFail($this->getUser->id);
             return ['status' => 1, 'message' => 'Profile updated successfully!', 'data' => $getNew];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -382,7 +423,7 @@ class SellerApiController extends Controller
             } else {
                 return ['status' => 0, 'message' => 'Current password wrong!'];
             }
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -412,7 +453,7 @@ class SellerApiController extends Controller
             }
             $digitalShowImage->save();
             return ['status' => 1, 'message' => 'Image successfully uploaded'];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -445,35 +486,44 @@ class SellerApiController extends Controller
             $weekEndDate = $now->endOfWeek()->format('Y-m-d');
             $startOfLastWeek = $now->startOfWeek()->copy()->subDays(7)->format('Y-m-d');
             $endOfLastWeek = $now->endOfWeek()->copy()->subDays(7)->format('Y-m-d');
-            $previous = DigitalShowImage::whereBetween('created_at', [$startOfLastWeek, $endOfLastWeek])->where('owner_id', $this->getUser->id)->withCount('comments')->withCount(['sellers' => function ($query) {
-                $query->where('heart', true);
-            }])->withCount('sellers as views_count')->get();
+            $previous = DigitalShowImage::whereBetween('created_at', [$startOfLastWeek, $endOfLastWeek])->where('owner_id', $this->getUser->id)->withCount('comments')->withCount([
+                'sellers' => function ($query) {
+                    $query->where('heart', true);
+                }
+            ])->withCount('sellers as views_count')->get();
             for ($i = 0; $i < count($previous); $i++) {
                 $previous_week_comments += $previous[$i]['comments_count'];
                 $previous_week_likes += $previous[$i]['sellers_count'];
                 $previous_week_views += $previous[$i]['views_count'];
             }
-            $week = DigitalShowImage::whereBetween('created_at', [$weekStartDate, $weekEndDate])->where('owner_id', $this->getUser->id)->withCount('comments')->withCount(['sellers' => function ($query) {
-                $query->where('heart', true);
-            }])->withCount('sellers as views_count')->get();
+            $week = DigitalShowImage::whereBetween('created_at', [$weekStartDate, $weekEndDate])->where('owner_id', $this->getUser->id)->withCount('comments')->withCount([
+                'sellers' => function ($query) {
+                    $query->where('heart', true);
+                }
+            ])->withCount('sellers as views_count')->get();
             for ($i = 0; $i < count($week); $i++) {
                 $current_week_comments += $week[$i]['comments_count'];
                 $current_week_likes += $week[$i]['sellers_count'];
                 $current_week_views += $week[$i]['views_count'];
             }
-            $total = DigitalShowImage::where('owner_id', $this->getUser->id)->withCount('comments')->withCount(['sellers' => function ($query) {
-                $query->where('heart', true);
-            }])->withCount('sellers as views_count')->get();
+            $total = DigitalShowImage::where('owner_id', $this->getUser->id)->withCount('comments')->withCount([
+                'sellers' => function ($query) {
+                    $query->where('heart', true);
+                }
+            ])->withCount('sellers as views_count')->get();
             for ($i = 0; $i < count($total); $i++) {
                 $total_comments += $total[$i]['comments_count'];
                 $total_likes += $total[$i]['sellers_count'];
                 $total_views += $total[$i]['views_count'];
             }
-            $images = DigitalShowImage::where('owner_id', $this->getUser->id)->withCount(['comments'])->withCount(['sellers' => function ($query) {
-                $query->where('heart', true);
-            }])->withCount('sellers as views_count')->orderBy('created_at', 'desc')->paginate($this->defaultPaginate);
+            $images = DigitalShowImage::where('owner_id', $this->getUser->id)->withCount(['comments'])->withCount([
+                'sellers' => function ($query) {
+                    $query->where('heart', true);
+                }
+            ])->withCount('sellers as views_count')->orderBy('created_at', 'desc')->paginate($this->defaultPaginate);
             return [
-                'status' => 1, 'images' => $images,
+                'status' => 1,
+                'images' => $images,
                 'total_comments' => $total_comments,
                 'total_likes' => $total_likes,
                 'total_views' => $total_views,
@@ -484,7 +534,7 @@ class SellerApiController extends Controller
                 'previous_week_likes' => $previous_week_likes,
                 'previous_week_views' => $previous_week_views,
             ];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -494,15 +544,23 @@ class SellerApiController extends Controller
         try {
             $images = DigitalShowImage::whereDoesntHave('sellers', function ($query) {
                 $query->where('seller.id', $this->getUser->id);
-            })->with(['owner' => function ($query) {
-                $query->select('id', 'firstname', 'lastname');
-            }])->with(['contests' => function ($query) {
-                $query->whereIn('status', [0, 1]);
-            }])->withCount(['sellers as heart_counts' => function ($query) {
-                $query->where('heart', true);
-            }])->with(['sellers' => function ($query) {
-                $query->where('seller.id', $this->getUser->id);
-            }])->withCount('sellers as views_count')->orderBy('heart_counts', 'desc')->orderBy('created_at', 'desc')->paginate(3);
+            })->with([
+                        'owner' => function ($query) {
+                            $query->select('id', 'firstname', 'lastname');
+                        }
+                    ])->with([
+                        'contests' => function ($query) {
+                            $query->whereIn('status', [0, 1]);
+                        }
+                    ])->withCount([
+                        'sellers as heart_counts' => function ($query) {
+                            $query->where('heart', true);
+                        }
+                    ])->with([
+                        'sellers' => function ($query) {
+                            $query->where('seller.id', $this->getUser->id);
+                        }
+                    ])->withCount('sellers as views_count')->orderBy('heart_counts', 'desc')->orderBy('created_at', 'desc')->paginate(3);
             for ($i = 0; $i < count($images); $i++) {
                 $relation = DigitalShowImageSellerRelation::where('user_id', $this->getUser->id)->where('image_id', $images[$i]->id)->first();
                 if ($relation) {
@@ -519,7 +577,7 @@ class SellerApiController extends Controller
                 }
             }
             return ['status' => 1, 'images' => $images];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -533,7 +591,7 @@ class SellerApiController extends Controller
                 $relation->save();
             }
             return ['status' => 1, 'relation' => $relation];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -547,7 +605,7 @@ class SellerApiController extends Controller
                 'user_id' => $this->getUser->id,
             ]);
             return ['status' => 1, 'message' => 'Successfully commented'];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -555,11 +613,13 @@ class SellerApiController extends Controller
     public function getCommentsByImageId(Request $request, $id)
     {
         try {
-            $comments = DigitalImageComment::where('image_id', $id)->orderBy('created_at')->with(['owner' => function ($query) {
-                $query->select('id', 'firstname', 'lastname');
-            }])->paginate($this->defaultPaginate);
+            $comments = DigitalImageComment::where('image_id', $id)->orderBy('created_at')->with([
+                'owner' => function ($query) {
+                    $query->select('id', 'firstname', 'lastname');
+                }
+            ])->paginate($this->defaultPaginate);
             return $comments;
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => $e];
         }
     }
@@ -599,7 +659,8 @@ class SellerApiController extends Controller
             'price' => $price->price,
         ]);
         return [
-            'status' => 1, 'message' => 'Paid Successfully',
+            'status' => 1,
+            'message' => 'Paid Successfully',
         ];
     }
 
@@ -607,13 +668,20 @@ class SellerApiController extends Controller
     {
         $total_price = Clan::where('owner_id', $this->getUser->id)->first()->history->where('type', 'clan_joining')->sum('price');
         $total_count = Clan::where('owner_id', $this->getUser->id)->count();
-        $clans = Clan::where('owner_id', $this->getUser->id)->with(['product' => function ($query) {
-            $query->with('productDescription');
-        }, 'members'])->withSum(['history' => function ($query) {
-            $query->where('type', 'clan_joining');
-        }], 'price')->get();
+        $clans = Clan::where('owner_id', $this->getUser->id)->with([
+            'product' => function ($query) {
+                $query->with('productDescription');
+            },
+            'members'
+        ])->withSum([
+                    'history' => function ($query) {
+                        $query->where('type', 'clan_joining');
+                    }
+                ], 'price')->get();
         return [
-            'status' => 1, 'clans' => $clans, "total" => [
+            'status' => 1,
+            'clans' => $clans,
+            "total" => [
                 'price' => $total_price,
                 'count' => $total_count,
             ],
@@ -622,21 +690,28 @@ class SellerApiController extends Controller
 
     public function getClans()
     {
-        $clans = Clan::where('owner_id', null)->with(['product' => function ($query) {
-            $query->with('productDescription');
-        }])->get();
+        $clans = Clan::where('owner_id', null)->with([
+            'product' => function ($query) {
+                $query->with('productDescription');
+            }
+        ])->get();
         return [
-            'status' => 1, 'clans' => $clans,
+            'status' => 1,
+            'clans' => $clans,
         ];
     }
 
     public function getJoinClans()
     {
-        $clans = Clan::whereNotNull('owner_id')->with(['product' => function ($query) {
-            $query->with('productDescription');
-        }, 'owner' => function ($query) {
-            $query->select(['id', 'firstname', 'lastname']);
-        }, 'members'])->paginate($this->defaultPaginate);
+        $clans = Clan::whereNotNull('owner_id')->with([
+            'product' => function ($query) {
+                $query->with('productDescription');
+            },
+            'owner' => function ($query) {
+                $query->select(['id', 'firstname', 'lastname']);
+            },
+            'members'
+        ])->paginate($this->defaultPaginate);
         return $clans;
     }
 
@@ -760,7 +835,7 @@ class SellerApiController extends Controller
     {
         $count = ProductPrice::where('product_id', $id)->count();
         $origin = Product::where('id', $id)->first()->origin_price;
-        $records = ProductPrice::where('product_id', $id)->skip($count - 48)->limit(48)->get();
+        $records = ProductPrice::where('product_id', $id)->skip($count - 40)->limit(40)->get();
         $prices = [];
         $origins = [];
         $labels = [];

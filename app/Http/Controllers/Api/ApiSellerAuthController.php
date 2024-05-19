@@ -24,7 +24,6 @@ class ApiSellerAuthController extends Controller
 
     public function register(Request $request)
     {
-        error_log(json_encode($request->all()));
         $validator = Validator::make(
             $request->all(),
             [
@@ -37,6 +36,9 @@ class ApiSellerAuthController extends Controller
 
         if ($validator->fails()) {
             $message = $this->one_validation_message($validator);
+            if ($message === 'The email has already been taken.') {
+                $message = 'Username is already taken, please choose a different username';
+            }
             return ['status' => 0, 'message' => $message];
         } else {
 
@@ -44,7 +46,6 @@ class ApiSellerAuthController extends Controller
             $data->password = bcrypt($request->password);
 
             if ($data->save()) {
-                error_log(json_encode($data));
                 return ['status' => 1, 'message' => "Seller created!"];
             } else {
                 return ['status' => 0, 'message' => "Error When create"];
@@ -54,7 +55,6 @@ class ApiSellerAuthController extends Controller
 
     public function login(Request $request)
     {
-        error_log(json_encode($request->all()));
         $validator = Validator::make(
             $request->all(),
             [
@@ -175,7 +175,16 @@ class ApiSellerAuthController extends Controller
         }
         return ['status' => 1, 'message' => 'succefully created!'];
     }
-
+    public function getAnswersForQuestions(Request $request)
+    {
+        $seller = Seller::where('email', $request->email)->first();
+        $relation = UserQuestionRelation::where('seller_id', $seller->id)->first();
+        if ($relation) {
+            return ['answer' => $relation->answer];
+        } else {
+            return null;
+        }
+    }
     public function getQuestionsByEmail(Request $request)
     {
         $seller = Seller::where('email', $request->email)->first();

@@ -82,8 +82,13 @@ class SellerCartApiController extends Controller
                     // check stock
                     if ($getProduct->quantity >= $request->quantity) {
 
-                        DB::table('cart')->insert(['product_id' => $request->product_id, 'seller_id' => $this->getUser->id, 'quantity' => $request->quantity, 'date_added' => date('Y-m-d H:i:s'),
-                            'option' => $request->options]);
+                        DB::table('cart')->insert([
+                            'product_id' => $request->product_id,
+                            'seller_id' => $this->getUser->id,
+                            'quantity' => $request->quantity,
+                            'date_added' => date('Y-m-d H:i:s'),
+                            'option' => $request->options
+                        ]);
 
                         //decrement product quantity
                         Product::where('id', $request->product_id)->update(['quantity' => $getProduct->quantity - $request->quantity]);
@@ -100,7 +105,7 @@ class SellerCartApiController extends Controller
                 return ['status' => 0, 'message' => 'Product not found!'];
             }
 
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -114,9 +119,22 @@ class SellerCartApiController extends Controller
             // get cart products
             $getCart = DB::table('cart')->where('seller_id', $this->getUser->id)->get();
             if (count($getCart) > 0) {
-                $getProducts = Product::select('product.price', 'product.id', 'product.model', 'product.image', 'cart.quantity', 'cart.cart_id',
-                    'product_description.name', 'tax_rate.rate', 'tax_rate.type', 'tax_rate.name as taxName', 'tax_rate.status as taxStatus',
-                    'product_special.price as specialPrice', 'product_special.start_date', 'product_special.end_date', 'cart.option'
+                $getProducts = Product::select(
+                    'product.price',
+                    'product.id',
+                    'product.model',
+                    'product.image',
+                    'cart.quantity',
+                    'cart.cart_id',
+                    'product_description.name',
+                    'tax_rate.rate',
+                    'tax_rate.type',
+                    'tax_rate.name as taxName',
+                    'tax_rate.status as taxStatus',
+                    'product_special.price as specialPrice',
+                    'product_special.start_date',
+                    'product_special.end_date',
+                    'cart.option'
                 )
                     ->join('cart', 'cart.product_id', '=', 'product.id')
                     ->join('product_description', 'product_description.product_id', '=', 'product.id')
@@ -219,7 +237,7 @@ class SellerCartApiController extends Controller
                 return ['status' => 0, 'cartData' => []];
             }
 
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -263,7 +281,7 @@ class SellerCartApiController extends Controller
                 return ['status' => 0, 'message' => 'Error'];
             }
 
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -381,8 +399,7 @@ class SellerCartApiController extends Controller
 
             /******************************************************
              **********if cart build for delete**********************
-             *******************************************************/
-            else if ($cartType == 'delete') {
+             *******************************************************/ else if ($cartType == 'delete') {
 
                 $quantity = $value->quantity;
 
@@ -472,7 +489,8 @@ class SellerCartApiController extends Controller
         $grandTotal = number_format($grandTotal, 2);
 
         $newSessionData = [
-            'cartData' => $cartData, 'subTotal' => $subTotal,
+            'cartData' => $cartData,
+            'subTotal' => $subTotal,
             'discount' => $discount,
             'taxes' => $sessionCartData['taxes'],
             'grandTotal' => $grandTotal,
@@ -522,7 +540,8 @@ class SellerCartApiController extends Controller
                                 $grandTotal = $grandTotal - $discountAmt;
                                 $discount = ['name' => $request->couponCode . ' (' . $discountTxt . ')', 'discountAmt' => number_format($discountAmt, 2)];
                                 $newSessionData = [
-                                    'cartData' => $sessionCartData['cartData'], 'subTotal' => $sessionCartData['subTotal'],
+                                    'cartData' => $sessionCartData['cartData'],
+                                    'subTotal' => $sessionCartData['subTotal'],
                                     'discount' => $discount,
                                     'taxes' => $sessionCartData['taxes'],
                                     'grandTotal' => $grandTotal,
@@ -560,7 +579,7 @@ class SellerCartApiController extends Controller
             } else {
                 return ['status' => 0, 'message' => 'Invalid coupon code'];
             }
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
 
@@ -609,7 +628,7 @@ class SellerCartApiController extends Controller
             } else {
                 return ['status' => 1, 'message' => 'Session expired add products again!'];
             }
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
     }
@@ -747,7 +766,7 @@ class SellerCartApiController extends Controller
 
             return ['status' => 1, 'message' => "Order successfully placed!"];
             //
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             Log::info(json_encode($e));
 
             return ['status' => 0, 'message' => $e];
@@ -789,6 +808,7 @@ class SellerCartApiController extends Controller
             'origin_price' => $price,
             'origin_quantity' => $quantity,
             'sell_price' => 0,
+            'hourly_tax_list' => ''
         ]);
         $notification_data = array(
             'type' => 'item_buy',
@@ -913,9 +933,10 @@ class SellerCartApiController extends Controller
                         'origin_price' => $product->price,
                         'origin_quantity' => $quantity,
                         'sell_price' => 0,
+                        'hourly_tax_list' => ''
                     ]);
                     // }
-                    $notification_data = array(
+                    $notification_data = array (
                         'type' => 'item_buy',
                         'product_id' => $product->id,
                         'seller_id' => $currentUser,
@@ -1131,7 +1152,7 @@ class SellerCartApiController extends Controller
 
             return ['status' => 1, 'message' => 'successful!'];
             //
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             Log::info(json_encode($e));
 
             return ['status' => 0, 'message' => $e];
@@ -1146,7 +1167,7 @@ class SellerCartApiController extends Controller
             $getOrders = Order::with('orderStatus:name,id', 'products:name,quantity,image,order_id,product_id,total')
                 ->where('seller_id', $this->getUser->id)->orderBy('order.order_date', 'DESC')->paginate($this->defaultPaginate);
             return ['status' => 1, 'data' => $getOrders];
-        } catch (\Exception$e) {
+        } catch (\Exception $e) {
             return ['status' => 0, 'message' => 'Error'];
         }
 

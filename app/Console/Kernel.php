@@ -15,7 +15,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('autoprice:change')->everyFiveMinutes()->withoutOverlapping()->appendOutputTo('scheduler-output.log');
+        $schedule->command('autoprice:change')->everyMinute();
+        $schedule->command('settax:hourly')->everyMinute()->appendOutputTo('scheduler-output.log');
+        $schedule->command('auto_sell')->everyMinute()->appendOutputTo('scheduler-output.log');
     }
 
     /**

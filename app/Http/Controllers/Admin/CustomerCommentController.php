@@ -40,6 +40,9 @@ class CustomerCommentController extends Controller
             'reply' => 'required',
         ]);
         $comment = CustomerComment::where('id', $id)->first();
+        if ($request->status) {
+            $comment->status = 1;
+        }
         $comment->reply = $request->reply;
         $comment->reply_at = Carbon::now();
         $comment->save();
