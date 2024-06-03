@@ -956,7 +956,7 @@ class GeneralApiController extends Controller
                     $sellers[$i]->balance = $seller_balance - $fee;
                     $sellers[$i]->withdraw_limit = (int) (($sellers[$i]->withdraw_limit) * 0.8);
                     $sellers[$i]->save();
-                    $notification_data = array (
+                    $notification_data = array(
                         'type' => 'everyday_cut',
                         'seller_id' => $sellers[$i]->id,
                         'quantity' => 1,
@@ -1060,6 +1060,7 @@ class GeneralApiController extends Controller
                 })
                 ->take(4)
                 ->get();
+            error_log(json_encode($data));
 
             return ['status' => 1, 'data' => $data];
         } catch (\Exception $e) {
@@ -1099,7 +1100,6 @@ class GeneralApiController extends Controller
     //new products v1
     public function getNewProductsV1(Request $request)
     {
-        error_log('get started');
         $data = Product::select('id', 'image', 'category_id', 'manufacturer_id', 'model', 'price', 'quantity', 'sort_order', 'status', 'date_available', 'created_at', 'power', 'change_amount', 'image_profit')
             ->with('productDescription:name,id,product_id,description', 'special:product_id,price,start_date,end_date')
             ->withCount([
@@ -1127,8 +1127,6 @@ class GeneralApiController extends Controller
             $product->setRelation('productPrice', $product->productPrice->take(6));
         }
 
-        error_log('get finished');
-        error_log(json_encode($data));
         return ['status' => 1, 'productsList' => $data];
     }
 
@@ -1345,7 +1343,7 @@ class GeneralApiController extends Controller
                     $query->select('id', 'image', 'price', 'quantity', 'sort_order', 'status', 'deleted_at', 'manufacturer_id', 'image_profit')
                         ->with('productDescription:name,id,product_id', 'special:product_id,price,start_date,end_date', 'seller:id,firstname,lastname,power')
                         ->with('productManufacturer')
-                        ->when(!empty ($keyword), function ($q) use ($keyword) {
+                        ->when(!empty($keyword), function ($q) use ($keyword) {
                             $q->whereHas('productDescription', function ($q) use ($keyword) {
                                 $q->where('name', 'like', "%$keyword%");
                             });
@@ -1672,7 +1670,7 @@ class GeneralApiController extends Controller
                         $seller_balance = (float) $seller->balance;
                         $seller->balance = $seller_balance + $amount;
                         $seller->save();
-                        $notification_data = array (
+                        $notification_data = array(
                             'type' => $product->points > 0 ? 'special_item_sell_auto' : 'item_sell_auto',
                             'product_id' => $product->product->id,
                             'seller_id' => $product->seller->id ?? null,
@@ -1765,25 +1763,33 @@ class GeneralApiController extends Controller
     public function setTaxHourly()
     {
         $unsold_products = ProductSellerRelation::where('sell_price', 0)->orderBy('created_at', 'desc')->get();
+        $current_time = Carbon::now();
         foreach ($unsold_products as $product) {
+            $product_created_at = new Carbon($product->created_at); // convert created_at to Carbon instance
+            $hours_difference = $product_created_at->diffInHours($current_time); // get difference in hours
             $product_price = Product::where('id', $product->product_id)->first()->price;
             $current_tax_list = is_string($product->hourly_tax_list) ? $product->hourly_tax_list : '';
-            $seller = Seller::where('id', $product->seller_id)->first();
-            $seller->balance -= $product_price * 0.02 * $product->quantity;
-            $new_notification = new Notification([
-                'type' => 'tax_hourly',
-                'product_id' => $product->product_id,
-                'seller_id' => $product->seller_id,
-                'price' => $product_price * 0.02 * $product->quantity,
-                'balance' => $seller->balance,
-                'seen' => 0,
-            ]);
-            $added_tax = strval($product_price * 0.02 * $product->quantity) . '_';
-            $current_tax_list = $current_tax_list ? $current_tax_list . $added_tax : $added_tax;
-            $product->hourly_tax_list = $current_tax_list;
-            $new_notification->save();
-            $seller->save();
-            $product->save();
+            $tax_counts = count(array_filter(explode('_', $current_tax_list), 'is_numeric'));
+            error_log('taxcount:' . $tax_counts);
+            error_log('hours:' . $hours_difference);
+            if ($hours_difference > $tax_counts && $product_price > 0) {
+                $seller = Seller::where('id', $product->seller_id)->first();
+                $seller->balance -= $product_price * 0.02 * $product->quantity;
+                $new_notification = new Notification([
+                    'type' => 'tax_hourly',
+                    'product_id' => $product->product_id,
+                    'seller_id' => $product->seller_id,
+                    'price' => $product_price * 0.02 * $product->quantity,
+                    'balance' => $seller->balance,
+                    'seen' => 0,
+                ]);
+                $added_tax = strval($product_price * 0.02 * $product->quantity) . '_';
+                $current_tax_list = $current_tax_list ? $current_tax_list . $added_tax : $added_tax;
+                $product->hourly_tax_list = $current_tax_list;
+                $new_notification->save();
+                $seller->save();
+                $product->save();
+            }
         }
     }
 }

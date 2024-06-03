@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('autoprice:change')->everyMinute();
         $schedule->command('settax:hourly')->everyMinute()->appendOutputTo('scheduler-output.log');
         $schedule->command('auto_sell')->everyMinute()->appendOutputTo('scheduler-output.log');
+        $schedule->command('auto_sell_delay')->everyMinute()->appendOutputTo('scheduler-output.log');
     }
 
     /**
@@ -31,4 +32,5 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
     }
+
 }

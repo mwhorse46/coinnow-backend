@@ -37,10 +37,24 @@ Artisan::command('settax:hourly', function () {
     }
 })->describe('Set tax hourly');
 
-Artisan::command('auto_sell', function () {
+Artisan::command('auto_sell_delay', function () {
     try {
+        sleep(30);
+        error_log('Auto sell command called');
         $controller = resolve(GeneralApiController::class);
         $controller->something();
+
+    } catch (\Exception $e) {
+        Log::error('An error occurred: ' . $e->getMessage());
+    }
+})->describe('Automatically sell products');
+
+Artisan::command('auto_sell', function () {
+    try {
+        error_log('Auto sell command called');
+        $controller = resolve(GeneralApiController::class);
+        $controller->something();
+
     } catch (\Exception $e) {
         Log::error('An error occurred: ' . $e->getMessage());
     }

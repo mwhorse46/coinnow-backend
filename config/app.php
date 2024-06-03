@@ -166,7 +166,7 @@ return [
         /*
          * Package Service Providers...
          */
-
+        Spatie\ShortSchedule\ShortScheduleServiceProvider::class,
         /*
          * Application Service Providers...
          */
